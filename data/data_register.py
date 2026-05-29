@@ -1,33 +1,40 @@
 
+from pathlib import Path
 from huggingface_hub.utils import RepositoryNotFoundError
 from huggingface_hub import HfApi, create_repo
 import sys
 import os
 
-from pathlib import Path
-
 # ---------------- Repo Details ----------------
 
 REPO_ID = "MaitreyiAshok/maintenance-data-files"
-
 REPO_TYPE = "dataset"
 
-DATA_PATH = "maintenance_project/data/engine_data.csv"
+# ---------------- Dataset Path ----------------
 
+BASE_DIR = Path(__file__).resolve().parent
+DATA_PATH = BASE_DIR / "engine_data.csv"
 
-# ---------------- Auth ----------------
-# SECURITY: replace hardcoded token with secret — see Known Issues section
+print(f"Resolved dataset path: {DATA_PATH}")
 
-api = HfApi(token=os.getenv("HF_TOKEN"))
-
-if not os.path.exists(DATA_PATH):
-
+if not DATA_PATH.exists():
     print(f"ERROR: Dataset file not found -> {DATA_PATH}")
-
     sys.exit(1)
 
 print(f"Dataset found: {DATA_PATH}")
+
+# ---------------- Auth ----------------
+
+HF_TOKEN = os.getenv("HF_TOKEN")
+
+if HF_TOKEN is None:
+    print("ERROR: HF_TOKEN environment variable not found")
+    sys.exit(1)
+
+api = HfApi(token=HF_TOKEN)
+
 # ---------------- Create Repo if Not Exists ----------------
+
 try:
 
     api.repo_info(
@@ -44,26 +51,23 @@ except RepositoryNotFoundError:
     create_repo(
         repo_id=REPO_ID,
         repo_type=REPO_TYPE,
-        private=False
+        private=False,
+        token=HF_TOKEN
     )
 
 except Exception as e:
 
     print(f"ERROR checking repository: {e}")
-
     sys.exit(1)
 
 # ---------------- Upload Dataset ----------------
+
 try:
 
     api.upload_file(
-
-        path_or_fileobj=DATA_PATH,
-
+        path_or_fileobj=str(DATA_PATH),
         path_in_repo="engine_data.csv",
-
         repo_id=REPO_ID,
-
         repo_type=REPO_TYPE
     )
 
@@ -77,7 +81,6 @@ try:
 except Exception as e:
 
     print(f"ERROR uploading dataset: {e}")
-
     sys.exit(1)
 
 print("Dataset registration complete!")
