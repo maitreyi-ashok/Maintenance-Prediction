@@ -391,19 +391,49 @@ print(" Files saved successfully")
 
 print("\n Uploading datasets to Hugging Face...")
 
+import time
 
-def upload_split(dataframe, repo_id, split_name):
+
+def upload_split(dataframe, repo_id, split_name, retries=3):
 
     hf_ds = Dataset.from_pandas(
         dataframe.reset_index(drop=True)
     )
 
-    hf_ds.push_to_hub(
-        repo_id,
-        split=split_name
-    )
+    for attempt in range(retries):
 
-    print(f" Uploaded split='{split_name}'")
+        try:
+
+            print(
+                f"\nUploading split='{split_name}' "
+                f"(Attempt {attempt + 1}/{retries})"
+            )
+
+            hf_ds.push_to_hub(
+                repo_id,
+                split=split_name,
+                token=HF_TOKEN
+            )
+
+            print(f"Uploaded split='{split_name}'")
+
+            return
+
+        except Exception as e:
+
+            print(f"Upload failed: {e}")
+
+            if attempt < retries - 1:
+
+                wait = 20 * (attempt + 1)
+
+                print(f"Retrying in {wait} seconds...")
+
+                time.sleep(wait)
+
+            else:
+
+                raise e
 
 
 upload_split(train_df, REPO_ID, "train_scaled")
