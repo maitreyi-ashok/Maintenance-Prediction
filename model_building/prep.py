@@ -16,9 +16,13 @@ from huggingface_hub import login, create_repo
 
 # Configuration
 
+from pathlib import Path
+
+BASE_DIR = Path(__file__).resolve().parent.parent
+
 DATA_PATH = os.getenv(
     "DATA_PATH",
-    "maintenance_project/data/engine_data.csv"
+    str(BASE_DIR / "data" / "engine_data.csv")
 )
 
 HF_TOKEN = os.getenv("HF_TOKEN")
